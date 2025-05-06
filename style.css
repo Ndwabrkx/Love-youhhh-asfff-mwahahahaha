@@ -1,0 +1,125 @@
+// LoveAnniversaryGame.tsx
+import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
+import Confetti from 'react-confetti';
+
+const loveQuote = `
+Love isn't just about the good times—it’s the little things, the tough days, the silly laughs, and quiet moments shared. In these six months, we’ve created memories stitched together by affection, resilience, and joy. Each day spent with you has deepened my admiration for your heart, your smile, your soul. Your presence is a melody I never tire of. I’m endlessly grateful for your support, your warmth, your laughter that echoes in my thoughts. You’ve made love feel effortless, like a sweet rhythm that guides every heartbeat. Our story is just beginning, yet it's already my favorite. With you, life feels richer, fuller, brighter. Happy six months, my love. Here’s to forever, one beautiful day at a time.Love you forever my little devilllll`;
+
+const LoveAnniversaryGame = () => {
+  const [kisses, setKisses] = useState<{ id: number; left: number; delay: number; startTime: number }[]>([]);
+  const [score, setScore] = useState(0);
+  const [gameCompleted, setGameCompleted] = useState(false);
+  const [basketX, setBasketX] = useState(50);
+  const [highlight, setHighlight] = useState(false);
+  const gameAreaRef = useRef<HTMLDivElement>(null);
+  const startTimeRef = useRef(performance.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!gameCompleted) {
+        setKisses(prev => [
+          ...prev,
+          {
+            id: Date.now(),
+            left: Math.random() * 90,
+            delay: Math.random() * 2,
+            startTime: performance.now()
+          }
+        ]);
+      }
+    }, 1200);
+    return () => clearInterval(interval);
+  }, [gameCompleted]);
+
+  useEffect(() => {
+    if (score >= 20) {
+      setGameCompleted(true);
+    }
+  }, [score]);
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (gameAreaRef.current) {
+      const rect = gameAreaRef.current.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      setBasketX(Math.min(90, Math.max(0, x)));
+    }
+  };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = performance.now();
+      setKisses(prev => {
+        const updated = prev.filter(kiss => {
+          const elapsed = (now - kiss.startTime) / 1000 - kiss.delay;
+          const fallDuration = 5;
+          const progress = elapsed / fallDuration;
+
+          if (progress >= 0.85) {
+            const isCaught = Math.abs(kiss.left - basketX) < 5;
+            if (isCaught) {
+              setScore(s => s + 1);
+              setHighlight(true);
+              setTimeout(() => setHighlight(false), 300);
+            }
+            return !isCaught;
+          }
+          return true;
+        });
+        return updated;
+      });
+    }, 100);
+    return () => clearInterval(interval);
+  }, [basketX]);
+
+  return (
+    <div
+      ref={gameAreaRef}
+      className="relative min-h-screen overflow-hidden flex flex-col items-center justify-center p-4 bg-gradient-to-b from-pink-200 via-pink-100 to-rose-200"
+      onMouseMove={handleMouseMove}
+    >
+      <div className="absolute inset-0 pointer-events-none bg-[url('/hearts-bg.png')] bg-cover opacity-10 z-0" />
+
+      <h1 className="text-4xl font-bold text-pink-700 mb-2 z-10">Happy 6 Months, My Love 💖</h1>
+      <p className="text-lg text-pink-800 mb-4 text-center z-10">Move the basket and catch the kisses! 💋</p>
+
+      <div
+        className={`absolute bottom-10 transform -translate-x-1/2 w-24 h-12 rounded-full shadow-xl flex items-center justify-center text-2xl z-10 transition-all duration-300 ${highlight ? 'bg-yellow-400 border-yellow-600 border-4 scale-110' : 'bg-pink-500 border-4 border-white'}`}
+        style={{ left: `${basketX}%` }}
+      >
+        🧺
+      </div>
+
+      {kisses.map(kiss => (
+        <motion.div
+          key={kiss.id}
+          initial={{ top: 0, opacity: 0 }}
+          animate={{ top: "85%", opacity: 1 }}
+          transition={{ duration: 5, ease: "easeInOut", delay: kiss.delay }}
+          className="absolute text-3xl cursor-pointer z-10"
+          style={{ left: `${kiss.left}%` }}
+        >
+          💋
+        </motion.div>
+      ))}
+
+      {gameCompleted && (
+        <>
+          <Confetti />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.7 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white p-6 rounded-2xl shadow-xl max-w-xl text-center mt-6 z-20"
+          >
+            <h2 className="text-2xl font-bold text-pink-600 mb-4">You Did It! 🎉</h2>
+            <p className="text-pink-700 text-md leading-relaxed">
+              {loveQuote}
+            </p>
+          </motion.div>
+        </>
+      )}
+    </div>
+  );
+};
+
+export default LoveAnniversaryGame;
